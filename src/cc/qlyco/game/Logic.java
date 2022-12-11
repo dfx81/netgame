@@ -60,7 +60,7 @@ class Logic implements Runnable {
   private void bluff() {
     System.out.print("Declare your move (R = Rock, P = Paper, S = Scissor): ");
 
-    char move = input.readLine().toUpperCase().charAt(0);
+    char move = input.nextLine().toUpperCase().charAt(0);
 
     switch (move) {
       case 'R':
@@ -79,7 +79,7 @@ class Logic implements Runnable {
     System.out.println("The opponent intented to use " + oppIntent + ".");
     System.out.println("What is your move (R = Rock, P = Paper, S = Scissor)?");
 
-    char move = input.readLine().toUpperCase().charAt(0);
+    char move = input.nextLine().toUpperCase().charAt(0);
 
     switch (move) {
       case 'R':
@@ -99,11 +99,11 @@ class Logic implements Runnable {
   }
 
   private void submitMove(Move move) {
-
+    // pass
   }
 
   private void receiveGameData() {
-
+    // pass
   }
 
   private void wait(int mils) {
