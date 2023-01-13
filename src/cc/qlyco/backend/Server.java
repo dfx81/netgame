@@ -40,4 +40,10 @@ class Server implements Runnable {
       matchmake();
     }
   }
+
+  private void matchmake() {
+    if (players.size() >= 2) {
+      workers.add(new Worker(players.remove(0), players.remove(0)));
+    }
+  }
 }
