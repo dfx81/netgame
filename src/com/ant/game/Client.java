@@ -29,7 +29,7 @@ public class Client {
       socket = new Socket(ip, port);
     } catch (Exception err) {
       System.out.println("\rERROR: Cannot establish connection to server.");
-      running = false;
+      return;
     }
 
     System.out.print("Searching opponent.");
@@ -42,6 +42,7 @@ public class Client {
       runGame();
     } catch (Exception err) {
       System.out.println("\rERROR: Communication with the other player is lost.");
+      return;
     }
   }
 
