@@ -2,10 +2,7 @@ package cc.qlyco.models;
 
 import java.io.Serializable;
 
-import cc.qlyco.models.GameState;
-import cc.qlyco.models.Move;
-
-class GameData implements Serializable {
+public class GameData implements Serializable {
   public int score = 0;
   public GameState state = null;
   public Move bluff = null;

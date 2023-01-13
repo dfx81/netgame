@@ -9,39 +9,60 @@ import cc.qlyco.models.GameState;
 import cc.qlyco.models.Move;
 
 class Worker implements Runnable {
-  private Socket p1;
-  private Socket p2;
   private ObjectInputStream[] inputs;
   private ObjectOutputStream[] outputs;
-  private GameState state = GameState.WAIT;
+  private GameState state = GameState.START;
 
   private int score1 = 0;
   private int score2 = 0;
   private GameData data1;
   private GameData data2;
 
-  public boolean running;
+  private Socket p1;
+  private Socket p2;
+
+  public boolean running = true;
 
   public Worker(Socket p1, Socket p2) {
     this.p1 = p1;
     this.p2 = p2;
 
-    inputs = new ObjectInputStream[]{
-      new ObjectInputStream(p1.getInputStream()),
-      new ObjectInputStream(p2.getInputStream())
-    };
-    outputs = new ObjectOutputStream[]{
-      new ObjectOutputStream(p1.getOutputStream()),
-      new ObjectOutputStream(p2.getOutputStream())
-    };
+    try {
+      outputs = new ObjectOutputStream[]{
+        new ObjectOutputStream(p1.getOutputStream()),
+        new ObjectOutputStream(p2.getOutputStream())
+      };
 
-    running = true;
+      outputs[0].flush();
+      outputs[1].flush();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    try {
+      inputs = new ObjectInputStream[]{
+        new ObjectInputStream(p1.getInputStream()),
+        new ObjectInputStream(p2.getInputStream())
+      };
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
 
     new Thread(this).start();
   }
 
+  /* (non-Javadoc)
+   * @see java.lang.Runnable#run()
+   */
   @Override
   public void run() {
+    /*data1 = new GameData(score1, state, null, null);
+    data2 = new GameData(score2, state, null, null);
+    
+    writeObjects();*/
+
+    System.out.println("New game session started.");
+
     while (running) {
       state = GameState.BLUFF;
 
@@ -52,9 +73,6 @@ class Worker implements Runnable {
       readObjects();
 
       state = GameState.PLAY;
-
-      Move bluff1 = data1.bluff;
-      Move bluff2 = data2.bluff;
 
       writeObjects();
       readObjects();
@@ -92,26 +110,38 @@ class Worker implements Runnable {
     data1.state = data2.state = GameState.OVER;
     writeObjects();
 
-    inputs[0].close();
-    inputs[1].close();
-    outputs[0].close();
-    outputs[1].close();
+    try {
+      p1.close();
+      p2.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   private void writeObjects() {
-    outputs[0].writeObject(data1);
-    outputs[1].writeObject(data2);
-
-    outputs[0].flush();
-    outputs[1].flush();
+    try {
+      outputs[0].writeObject(data1);
+      outputs[1].writeObject(data2);
+      outputs[0].flush();
+      outputs[1].flush();
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.out.println(running + " : " + state);
+      running = false;
+    }
   }
 
   private void readObjects() {
-    data1 = (GameData) inputs[0].readObject();
-    data2 = (GameData) inputs[1].readObject();
+    try {
+      data1 = (GameData) inputs[0].readObject();
+      data2 = (GameData) inputs[1].readObject();
+    } catch (Exception e) {
+      e.printStackTrace();
+      running = false;
+    }
   }
 
-  private void check(Move m1, Move m2) {
+  private int check(Move m1, Move m2) {
     if (m1 == m2) {
       return 0;
     } else if ((m1 == Move.ROCK && m2 == Move.SCISSOR) || (m1 == Move.SCISSOR && m2 == Move.PAPER) || (m1 == Move.PAPER && m2 == Move.ROCK)) {
