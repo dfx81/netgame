@@ -1,12 +1,13 @@
-package cc.qlyco.backend;
+package com.ant.backend;
 
 import java.net.Socket;
+
+import com.ant.models.GameData;
+import com.ant.models.GameState;
+import com.ant.models.Move;
+
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-
-import cc.qlyco.models.GameData;
-import cc.qlyco.models.GameState;
-import cc.qlyco.models.Move;
 
 class Worker implements Runnable {
   private ObjectInputStream[] inputs;
@@ -23,6 +24,10 @@ class Worker implements Runnable {
 
   public boolean running = true;
 
+  private int errors = 0;
+
+  private final int MATCH_POINT = 3;
+
   public Worker(Socket p1, Socket p2) {
     this.p1 = p1;
     this.p2 = p2;
@@ -36,7 +41,9 @@ class Worker implements Runnable {
       outputs[0].flush();
       outputs[1].flush();
     } catch (Exception e) {
-      e.printStackTrace();
+      System.out.println("[ERROR] Cannot establish connection with players.");
+      errors++;
+      running = false;
     }
 
     try {
@@ -45,7 +52,9 @@ class Worker implements Runnable {
         new ObjectInputStream(p2.getInputStream())
       };
     } catch (Exception e) {
-      e.printStackTrace();
+      System.out.println("[ERROR] Cannot establish connection with players.");
+      errors++;
+      running = false;
     }
 
     new Thread(this).start();
@@ -56,13 +65,6 @@ class Worker implements Runnable {
    */
   @Override
   public void run() {
-    /*data1 = new GameData(score1, state, null, null);
-    data2 = new GameData(score2, state, null, null);
-    
-    writeObjects();*/
-
-    System.out.println("New game session started.");
-
     while (running) {
       state = GameState.BLUFF;
 
@@ -73,6 +75,12 @@ class Worker implements Runnable {
       readObjects();
 
       state = GameState.PLAY;
+
+      Move bluff1 = data1.bluff;
+      Move bluff2 = data2.bluff;
+
+      data1 = new GameData(score1, state, bluff2, null);
+      data2 = new GameData(score2, state, bluff1, null);
 
       writeObjects();
       readObjects();
@@ -102,41 +110,64 @@ class Worker implements Runnable {
 
       writeObjects();
 
-      if (score1 >= 3 || score2 >= 3) {
+      if (score1 >= MATCH_POINT || score2 >= MATCH_POINT) {
+        state = GameState.OVER;
         running = false;
       }
     }
 
-    data1.state = data2.state = GameState.OVER;
+    data1 = new GameData(score1, state, null, null);
+    data2 = new GameData(score2, state, null, null);
+
     writeObjects();
 
+    closeConnection();
+  }
+
+  private void closeConnection() {
     try {
+      outputs[0].close();
+      inputs[0].close();
       p1.close();
+    } catch (Exception e) {
+      System.out.println("[ERROR] Encountered problem when closing connection.");
+    }
+
+    try {
+      outputs[1].close();
+      inputs[1].close();
       p2.close();
     } catch (Exception e) {
-      e.printStackTrace();
+      System.out.println("[ERROR] Encountered problem when closing connection.");
     }
   }
 
   private void writeObjects() {
+    if (errors > 0)
+      return;
+
     try {
       outputs[0].writeObject(data1);
-      outputs[1].writeObject(data2);
       outputs[0].flush();
+      outputs[1].writeObject(data2);
       outputs[1].flush();
     } catch (Exception e) {
-      e.printStackTrace();
-      System.out.println(running + " : " + state);
+      System.out.println("[ERROR] Cannot communicate with players.");
+      errors++;
       running = false;
     }
   }
 
   private void readObjects() {
+    if (errors > 0)
+      return;
+    
     try {
       data1 = (GameData) inputs[0].readObject();
       data2 = (GameData) inputs[1].readObject();
     } catch (Exception e) {
-      e.printStackTrace();
+      System.out.println("[ERROR] Cannot communicate with players.");
+      errors++;
       running = false;
     }
   }

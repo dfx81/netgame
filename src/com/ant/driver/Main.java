@@ -1,9 +1,10 @@
-package cc.qlyco.driver;
-
-import cc.qlyco.backend.Server;
-import cc.qlyco.game.Logic;
+package com.ant.driver;
 
 import java.util.Scanner;
+
+import com.ant.backend.Server;
+import com.ant.game.Client;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 
@@ -29,13 +30,9 @@ public class Main {
                 }
             }
 
-            Logic gameClient = new Logic(ip, port);
-
-            while (gameClient.running) {
-                continue;
-            }
+            new Client(ip, port);
         }
 
-        System.out.println("Closing program.");
+        System.out.println("\nClosing program.");
     }
 }

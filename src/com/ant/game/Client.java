@@ -1,17 +1,16 @@
-package cc.qlyco.game;
+package com.ant.game;
 
 import java.util.Scanner;
+
+import com.ant.models.GameData;
+import com.ant.models.GameState;
+import com.ant.models.Move;
+
 import java.net.Socket;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import cc.qlyco.models.GameData;
-import cc.qlyco.models.GameState;
-import cc.qlyco.models.Move;
-
-public class Logic {
-  private GameState gameState = null;
+public class Client {
   private Scanner input = new Scanner(System.in);
   private Socket socket;
   private ObjectOutputStream out;
@@ -21,44 +20,58 @@ public class Logic {
   private int score1 = 0;
   private int score2 = 0;
 
-  public boolean running;
+  private final int MATCH_POINT = 3;
 
-  public Logic(String ip, int port) {
+  public boolean running = true;
+
+  public Client(String ip, int port) {
     try {
       socket = new Socket(ip, port);
-      
-      System.out.print("Connected to server. Waiting for opponent...");
-      
+    } catch (Exception err) {
+      System.out.println("\rERROR: Cannot establish connection to server.");
+      running = false;
+    }
+
+    System.out.print("Searching opponent.");
+    
+    try {
       out = new ObjectOutputStream(socket.getOutputStream());
       out.flush();
       in = new ObjectInputStream(socket.getInputStream());
 
       runGame();
     } catch (Exception err) {
-      err.printStackTrace();
+      System.out.println("\rERROR: Communication with the other player is lost.");
     }
   }
 
   private void runGame() {
-    /*receiveGameData();
-
-    if (data.state == GameState.PLAY) {
-      System.out.println("\rOpponent found!");
-      running = true;
-    }*/
-
-    running = true;
+    System.out.println("\rOpponent has been found!");
 
     while (running) {
-      System.out.println("\rOpponent found!\n\n");
-      System.out.println("YOUR SCORE: " + score1 + " | OPPONENT's SCORE: " + score2);
       receiveGameData();
+
+      if (data.state == GameState.BLUFF || data.state == GameState.OVER)
+        System.out.println("\nYOUR SCORE: " + score1 + " | OPPONENT's SCORE: " + score2);
+
       handleTurn();
+    }
+
+    closeConnection();
+  }
+
+  private void closeConnection() {
+    try {
+      out.close();
+      in.close();
+      socket.close();
+    } catch (Exception e) {
+      System.out.println("ERROR: Game session ended early because connection with the other player is lost.");
     }
   }
 
   private void handleTurn() {
-    switch (gameState) {
+    switch (data.state) {
       case BLUFF:
         bluff();
         break;
@@ -71,9 +84,12 @@ public class Logic {
   }
 
   private void bluff() {
-    System.out.print("Declare your move (R = Rock, P = Paper, S = Scissor): ");
+    char move = '-';
 
-    char move = input.nextLine().toUpperCase().charAt(0);
+    while (!(move == 'R' || move == 'P' || move == 'S')) { 
+      System.out.print("Declare your move (R = Rock, P = Paper, S = Scissor): ");
+      move = input.nextLine().toUpperCase().charAt(0);
+    }
 
     switch (move) {
       case 'R':
@@ -89,10 +105,14 @@ public class Logic {
   }
 
   private void play() {
-    System.out.println("The opponent intented to use " + data.bluff + ".");
-    System.out.println("What is your move (R = Rock, P = Paper, S = Scissor)?");
+    char move = '-';
 
-    char move = input.nextLine().toUpperCase().charAt(0);
+    System.out.println("The opponent intented to use " + data.bluff + ".");
+
+    while (!(move == 'R' || move == 'P' || move == 'S')) {
+      System.out.print("What is your move (R = Rock, P = Paper, S = Scissor): ");
+      move = input.nextLine().toUpperCase().charAt(0);
+    }
 
     switch (move) {
       case 'R':
@@ -108,38 +128,30 @@ public class Logic {
   }
 
   private void submitMove(Move move, boolean isBluff) {
-    data = new GameData(0, null, (!isBluff) ? move : null, (isBluff) ? move : null);
+    data = new GameData(0, null, (isBluff) ? move : null, (!isBluff) ? move : null);
     try {
       out.writeObject(data);
-    } catch (IOException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+      System.out.println("\nERROR: Cannot communicate with game session.");
+      running = false;
     }
   }
 
   private void receiveGameData() {
     try {
       data = (GameData) in.readObject();
-    } catch (ClassNotFoundException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+      System.out.println("\nERROR: Cannot communicate with game session.");
+      running = false;
     }
   }
-
-  /*private void wait(int mils) {
-    try {
-      Thread.sleep(mils);
-    } catch (Exception err) {
-      err.printStackTrace();
-    }
-  }*/
 
   private void check() {
     String message = "";
     
-    switch (gameState) {
+    switch (data.state) {
       case WIN:
-        message = "You win the round!";
+        message = "You won the round!";
         score1 = data.score;
         break;
       case LOSE:
@@ -151,11 +163,12 @@ public class Logic {
         message = "The round ends in a draw.";
         break;
       case OVER:
-        if (score1 >= 3)
+        if (score1 >= MATCH_POINT)
           message = "You've won the game!";
-        else if (score2 >= 3)
+        else if (score2 >= MATCH_POINT)
           message = "Your opponent have won the game!";
         
+        running = false;
         break;
       default:
         break;

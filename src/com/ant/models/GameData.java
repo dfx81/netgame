@@ -1,4 +1,4 @@
-package cc.qlyco.models;
+package com.ant.models;
 
 import java.io.Serializable;
 
