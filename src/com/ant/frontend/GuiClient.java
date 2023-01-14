@@ -76,7 +76,7 @@ public class GuiClient implements Runnable {
         title.setFont(new Font("SansSerif", Font.BOLD, 64));
         menu.add(title, BorderLayout.PAGE_START);
         JLabel help = new JLabel(
-                "<html>How to play:<br/>&emsp;&emsp;Declare your move before playing Rock Paper Scissors in order<br/>&emsp;&emsp;to throw off your opponent.</html>",
+                "<html>How to play:<br/>&emsp;&emsp;Declare your move before playing Rock Paper Scissors in order<br/>&emsp;&emsp;to throw off your opponent.<br/><br/>&emsp;&emsp;Reach 3 points to win.</html>",
                 SwingConstants.CENTER);
         menu.add(help, BorderLayout.CENTER);
 
@@ -152,9 +152,10 @@ public class GuiClient implements Runnable {
         backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
+                game.remove(backButton);
+                game.add(buttonGroup, BorderLayout.PAGE_END);
                 frame.setContentPane(menu);
                 frame.revalidate();
-                game.add(buttonGroup, BorderLayout.PAGE_END);
             }
         });
         buttonGroup.add(rock);
@@ -225,6 +226,7 @@ public class GuiClient implements Runnable {
             showError("Cannot connect to the server.");
             frame.setContentPane(menu);
             frame.revalidate();
+            running = false;
             return;
         }
 
@@ -241,6 +243,7 @@ public class GuiClient implements Runnable {
             closeConnection();
             frame.setContentPane(menu);
             frame.revalidate();
+            running = false;
             return;
         }
     }
@@ -262,6 +265,7 @@ public class GuiClient implements Runnable {
             socket.close();
         } catch (Exception e) {
             showError("Game session ended early because connection with the other player is lost.");
+            running = false;
         }
     }
 
@@ -359,6 +363,11 @@ public class GuiClient implements Runnable {
 
     @Override
     public void run() {
+        score1 = 0;
+        score2 = 0;
+
+        data = null;
+
         matchmake();
 
         while (running) {

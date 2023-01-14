@@ -9,8 +9,12 @@ public class Server implements Runnable {
   private ServerSocket server;
   private ArrayList<Worker> workers;
   private ArrayList<Socket> players;
+  private Monitor monitorService;
+  private int monitorPort;
 
-  public Server(int port) {
+  public Server(int port, int monitorPort) {
+    this.monitorPort = monitorPort;
+
     try {
       server = new ServerSocket(port);
       running = true;
@@ -50,6 +54,9 @@ public class Server implements Runnable {
   }
 
   private void monitor() {
+    monitorService = new Monitor(monitorPort);
+    new Thread(monitorService).start();
+
     while (running) {
       wait(10000);
 

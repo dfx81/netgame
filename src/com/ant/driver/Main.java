@@ -11,8 +11,8 @@ import java.io.FileNotFoundException;
 
 public class Main {
     public static void main(String[] args) {
-        if (args.length == 1) {
-            new Server(Integer.parseInt(args[0]));
+        if (args.length == 2) {
+            new Server(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
         } else {
             String ip = "127.0.0.1";
             int port = 8080;
