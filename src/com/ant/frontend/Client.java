@@ -1,4 +1,4 @@
-package com.ant.game;
+package com.ant.frontend;
 
 import java.util.Scanner;
 

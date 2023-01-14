@@ -33,7 +33,7 @@ public class Server implements Runnable {
     while (running) {
       try {
         players.add(server.accept());
-        System.out.println("[INFO] Connected clients: " + players.size());
+        System.out.println("[INFO] Connected clients: " + (players.size() + workers.size() * 2));
         matchmake();
       } catch (Exception err) {
         err.printStackTrace();

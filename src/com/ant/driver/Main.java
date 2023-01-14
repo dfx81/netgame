@@ -3,7 +3,8 @@ package com.ant.driver;
 import java.util.Scanner;
 
 import com.ant.backend.Server;
-import com.ant.game.Client;
+import com.ant.frontend.Client;
+import com.ant.frontend.GuiClient;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -15,6 +16,8 @@ public class Main {
         } else {
             String ip = "127.0.0.1";
             int port = 8080;
+            boolean gui = false;
+
             File config = new File("./.config");
 
             if (config.exists()) {
@@ -23,6 +26,7 @@ public class Main {
 
                     ip = reader.nextLine();
                     port = reader.nextInt();
+                    gui = reader.nextBoolean();
 
                     reader.close();
                 } catch (FileNotFoundException e) {
@@ -30,7 +34,10 @@ public class Main {
                 }
             }
 
-            new Client(ip, port);
+            if (gui)
+                new GuiClient(ip, port);
+            else
+                new Client(ip, port);
         }
 
         System.out.println("\nClosing program.");
